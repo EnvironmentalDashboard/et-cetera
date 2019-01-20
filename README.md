@@ -8,12 +8,14 @@ On nyc1 (running HAProxy and Apache):
 ln -s /et-cetera/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg
 ln -s /et-cetera/apache2/nyc1-ports.conf /etc/apache2/ports.conf
 ln -s /et-cetera/apache2/sites-available/nyc1.conf /etc/apache2/sites-available/environmentaldashboard.org.conf
+ln -s /et-cetera/letsencrypt/cli.ini /etc/letsencrypt/cli.ini
 ```
 
 On any worker node (running Apache):
 ```
 ln -s /et-cetera/apache2/node-ports.conf /etc/apache2/ports.conf
 ln -s /et-cetera/apache2/sites-available/node.conf /etc/apache2/sites-available/environmentaldashboard.org.conf
+ln -s /et-cetera/letsencrypt/cli.ini /etc/letsencrypt/cli.ini
 ```
 
 Apache needs the following modules enabled:
