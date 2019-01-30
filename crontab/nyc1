@@ -1,0 +1,55 @@
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+SHELL=/bin/bash
+MAILTO=dashboard@oberlin.edu
+DEBIAN_FRONTEND=noninteractive
+# m h  dom mon dow   command
+
+# this script makes sure the meta data for each building in the API matches what's in the db
+0 0 * * 0 php /var/repos/scripts/sync_meta_data.php
+
+# sync static assets
+*/2 * * * * /var/repos/scripts/sync_static_assets.sh > /dev/null
+
+# backup the database, and delete any backups older than 30 days
+0 4 * * * /var/repos/scripts/db_backup.sh
+0 4 1 * * find /root/db_backups/oberlin_environmentaldashboard -mtime +30 -type f -delete
+0 4 1 * * find /root/db_backups/community_voices -mtime +30 -type f -delete
+# backup filesystem
+# TODO: backup machine out of space
+#0 1 * * 0 /var/repos/scripts/backup.sh
+
+# send any emails in outbox
+*/10 * * * * docker exec oberlin-calendar php /var/www/html/send_emails.php
+
+# send calendar newsletter
+0 6 * * 5 docker exec oberlin-calendar php /var/www/html/newsletter.php && docker exec oberlin-calendar php /var/www/html/send_emails.php
+
+# fetch data from airnow api
+0 * * * * php /var/repos/scripts/airnow/fetch.php
+
+# fetch data from glos buoys
+0 0 * * * php /var/repos/scripts/glos/fetch.php
+
+# update server
+0 0 * * 1 apt-get update -y >/dev/null && apt-get full-upgrade -y >/dev/null
+
+# TODO: is this still necessary? most (all?) containers have always restart policy
+@reboot docker restart $(docker ps -q) >/dev/null
+
+# load data from daemons into db every 20s
+* * * * * mysql --defaults-extra-file=/var/secret/mysql_cron.cnf oberlin_environmentaldashboard -e "LOAD DATA LOCAL INFILE '/root/meter_data.csv' IGNORE INTO TABLE meter_data FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\"' LINES TERMINATED BY '\n' (meter_id, value, recorded, resolution);" >/dev/null 2>&1 && rm /root/meter_data.csv >/dev/null 2>&1
+* * * * * sleep 20 && mysql --defaults-extra-file=/var/secret/mysql_cron.cnf oberlin_environmentaldashboard -e "LOAD DATA LOCAL INFILE '/root/meter_data.csv' IGNORE INTO TABLE meter_data FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\"' LINES TERMINATED BY '\n' (meter_id, value, recorded, resolution);" >/dev/null 2>&1 && rm /root/meter_data.csv >/dev/null 2>&1
+* * * * * sleep 40 && mysql --defaults-extra-file=/var/secret/mysql_cron.cnf oberlin_environmentaldashboard -e "LOAD DATA LOCAL INFILE '/root/meter_data.csv' IGNORE INTO TABLE meter_data FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\"' LINES TERMINATED BY '\n' (meter_id, value, recorded, resolution);" >/dev/null 2>&1 && rm /root/meter_data.csv >/dev/null 2>&1
+# calc quarterhour/hour resolutions from live res data so it doesnt have to be fetched from API
+*/15 * * * * php /var/repos/scripts/quarterhour.php
+0 * * * * php /var/repos/scripts/hour.php
+# delete old 15min data
+*/15 * * * * mysql --defaults-extra-file=/var/secret/mysql_cron.cnf -sN oberlin_environmentaldashboard -e "DELETE FROM meter_data WHERE resolution = 'quarterhour' AND recorded < (UNIX_TIMESTAMP() - 1209600) AND meter_id IN (SELECT id FROM meters WHERE calculated = 1)" >/dev/null 2>&1
+# delete old hour data
+0 * * * * mysql --defaults-extra-file=/var/secret/mysql_cron.cnf -sN oberlin_environmentaldashboard -e "DELETE FROM meter_data WHERE resolution = 'hour' AND recorded < (UNIX_TIMESTAMP() - 5184000) AND meter_id IN (SELECT id FROM meters WHERE calculated = 1)" >/dev/null 2>&1
+# delete live res data (live res is normally stored for 2 hours but actually lets keep it a little longer i.e. 3 days)
+*/2 * * * * mysql --defaults-extra-file=/var/secret/mysql_cron.cnf -sN oberlin_environmentaldashboard -e "DELETE FROM meter_data WHERE resolution = 'live' AND recorded < (UNIX_TIMESTAMP() - 259200) AND meter_id IN (SELECT id FROM meters WHERE calculated = 1)" >/dev/null 2>&1
+
+# start environmental orb server (-Jeremy)
+@reboot /root/.nvm/versions/node/v6.11.3/bin/forever start /var/www/repos/orb-server/src/app/app.js
+
