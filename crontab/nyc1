@@ -50,6 +50,3 @@ DEBIAN_FRONTEND=noninteractive
 # delete live res data (live res is normally stored for 2 hours but actually lets keep it a little longer i.e. 3 days)
 */2 * * * * mysql --defaults-extra-file=/var/secret/mysql_cron.cnf -sN oberlin_environmentaldashboard -e "DELETE FROM meter_data WHERE resolution = 'live' AND recorded < (UNIX_TIMESTAMP() - 259200) AND meter_id IN (SELECT id FROM meters WHERE calculated = 1)" >/dev/null 2>&1
 
-# start environmental orb server (-Jeremy)
-@reboot /root/.nvm/versions/node/v6.11.3/bin/forever start /var/www/repos/orb-server/src/app/app.js
-
