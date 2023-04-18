@@ -4,11 +4,11 @@ MAILTO=dashboard@oberlin.edu
 DEBIAN_FRONTEND=noninteractive
 # m h  dom mon dow   command
 
-# this script makes sure the meta data for each building in the API matches what's in the db
-0 0 * * 0 php /var/repos/scripts/sync_meta_data.php
+# this script makes sure the meta data for each building in the API matches what's in the db [we are not syncing these data so commenting this line]
+# 0 0 * * 0 php /var/repos/scripts/sync_meta_data.php
 
-# sync static assets
-*/2 * * * * /var/repos/scripts/sync_static_assets.sh > /dev/null
+# sync static assets [we are not syncing these data so commenting this line]
+# */2 * * * * /var/repos/scripts/sync_static_assets.sh > /dev/null
 
 # backup the database, and delete any backups older than 30 days
 0 4 * * * /var/repos/scripts/db_backup.sh
