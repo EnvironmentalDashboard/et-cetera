@@ -10,6 +10,8 @@ ln -s /et-cetera/apache2/nyc1-ports.conf /etc/apache2/ports.conf
 ln -s /et-cetera/apache2/sites-available/nyc1.conf /etc/apache2/sites-available/environmentaldashboard.org.conf
 ln -s /et-cetera/letsencrypt/cli.ini /etc/letsencrypt/cli.ini
 ln -s /et-cetera/mysql/mysql.conf.d/mysqld.cnf /etc/mysql/mysql.conf.d/mysqld.cnf
+
+# Before running this command, make sure you take the backup of existing crontab in case of any rollback
 crontab /et-cetera/crontab/nyc1
 ```
 
@@ -18,6 +20,8 @@ on any worker node (running apache):
 ln -s /et-cetera/apache2/node-ports.conf /etc/apache2/ports.conf
 ln -s /et-cetera/apache2/sites-available/node.conf /etc/apache2/sites-available/environmentaldashboard.org.conf
 ln -s /et-cetera/letsencrypt/cli.ini /etc/letsencrypt/cli.ini
+
+# Before running this command, make sure you take the backup of existing crontab in case of any rollback
 crontab /et-cetera/crontab/node
 ```
 
